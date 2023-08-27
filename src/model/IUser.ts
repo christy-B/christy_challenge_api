@@ -3,13 +3,14 @@
 // A noter, le ? veut dire que le champ est optionnel
 
 export interface IUser {
-  id_user: number;
-  nom_user: string;
-  prenom_user: string;
-  email_user: string;
-  scope: string;
-  promo_user: string;
-
+  id: number;
+  nom?: string;
+  prenom?: string;
+  email: string;
+  scope: 'user'|'admin';
+  id_promo: number;
+  id_instance: number;
+  id_score:number
 }
 
 // Outils de manipulation des types :
@@ -17,6 +18,6 @@ export interface IUser {
 // Ici, on rend tous les champs "lecture seul". Typescript ne va pas autoriser l'affectation des champs
 export type IUserRO = Readonly<IUser>;
 
-export type IUserCreate = Omit<IUser, 'id_user'>;
+export type IUserCreate = Omit<IUser, 'id'>;
 
 export type IUserUpdate = Partial<IUserCreate>;

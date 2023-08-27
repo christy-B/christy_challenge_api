@@ -1,11 +1,11 @@
-export type StructuredErrors = 
+export type StructuredErrors =
   // SQL
-  'sql/failed' |  
+  'sql/failed' |
   'sql/not-found' |
 
   // Crud
-  'validation/failed' | 
-    
+  'validation/failed' |
+
   // Authorization
   'auth/missing-email' |
   'auth/unknown-email' |
@@ -15,8 +15,10 @@ export type StructuredErrors =
   'auth/access-token-expired' |
   'auth/invalid-access-token' |
   'auth/insufficient-scopes' |
+  'auth/missing-renew-token' |
+  'auth/invalid-renew-token' |
 
 
   // Default
   'internal/unknown'
-;
+  ;

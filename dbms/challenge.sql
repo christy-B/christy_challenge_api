@@ -1,69 +1,91 @@
 /* La définition du schéma */
+
 USE challenge;
 
--- Création de la table USER
-CREATE TABLE USER (
-    id_user int auto_increment not null,
-    nom_user VARCHAR(256) NOT NULL,
-    prenom_user VARCHAR(256) NOT NULL,
-    email_user VARCHAR(256) unique not null,
-    scope ENUM('user', 'admin') NOT NULL,
-    promo_user VARCHAR(256) NOT NULL,
-    primary key(id_user)
-);
-
--- Création de la table PROMO
-CREATE TABLE PROMO (
-    id_promo int auto_increment not null,
-    mon_promo VARCHAR(256) NOT NULL,
-    primary key(id_promo)
-);
-
--- Création de la table CHALLENGE
-CREATE TABLE CHALLENGE (
-    id_challenge int auto_increment not null,
-    nom_challenge VARCHAR(256) NOT NULL,
-    debut_challenge TIMESTAMP NOT NULL,
-    fin_challenge TIMESTAMP NOT NULL,
-    id_promo INT NOT NULL,
-    challenge_active BOOLEAN DEFAULT 1,
-    primary key(id_challenge)
-);
-
--- Création de la table QUESTION
-CREATE TABLE QUESTION (
-    id_question int auto_increment not null,
-    question_text VARCHAR(256) NOT NULL,
-    question_description VARCHAR(200) NOT NULL,
-    bonne_reponse VARCHAR(256) NOT NULL,
-    question_score INT NOT NULL,
-    primary key(id_question)
-);
-
--- Création de la table SCORE
-CREATE TABLE SCORE (
-    id_score int auto_increment not null,
-    score INT NOT NULL,
-    user_foreign_key INT,
-    challenge_foreign_key INT,
-    FOREIGN KEY (user_foreign_key) REFERENCES USER(id_user),
-    FOREIGN KEY (challenge_foreign_key) REFERENCES CHALLENGE(id_challenge),
-    primary key(id_score)
-);
-
--- Creation de la table instance
 CREATE TABLE INSTANCE (
-id_instance int auto_increment not null,
-ip_instance VARCHAR(15),
-port_instance VARCHAR(5),
-user_instance VARCHAR(32),
-user_foreign_key INT NOT NULL,
-FOREIGN KEY (user_foreign_key) REFERENCES USER(id_user),
-primary key(id_instance)
+   id INT NOT NULL AUTO_INCREMENT,
+   adresse_ip VARCHAR(255) NOT NULL,
+   login VARCHAR(255) NOT NULL,
+   mdp VARCHAR(255) NOT NULL,
+   PRIMARY KEY (id),
+   UNIQUE KEY (adresse_ip, login)
 );
+
+CREATE TABLE PROMO(
+   id INT NOT NULL AUTO_INCREMENT,
+   nom VARCHAR(255) NOT NULL,
+   PRIMARY KEY (id),
+   UNIQUE KEY (nom)
+);
+
+CREATE TABLE SCORE (
+   id INT NOT NULL AUTO_INCREMENT,
+   points INT NOT NULL,
+   PRIMARY KEY (id),
+   CHECK (points >= 0)
+);
+
+CREATE TABLE SESSION (
+   id INT NOT NULL AUTO_INCREMENT,
+   nom VARCHAR(255) NOT NULL,
+   id_promo INT NOT NULL,
+   PRIMARY KEY (id),
+   FOREIGN KEY (id_promo) REFERENCES PROMO(id)
+);
+
+CREATE TABLE REPONSE (
+   id INT NOT NULL AUTO_INCREMENT,
+   intitule VARCHAR(255) NOT NULL,
+   point INT NOT NULL,
+   PRIMARY KEY (id),
+   CHECK (point >= 0)
+);
+
+CREATE TABLE QUESTION (
+   id INT NOT NULL AUTO_INCREMENT,
+   intitule VARCHAR(255) NOT NULL,
+   id_session INT,
+   id_reponse INT,
+   PRIMARY KEY (id),
+   FOREIGN KEY (id_session) REFERENCES SESSION(id),
+   FOREIGN KEY (id_reponse) REFERENCES REPONSE(id)
+);
+
+CREATE TABLE USER (
+   id INT NOT NULL AUTO_INCREMENT,
+   email VARCHAR(255) NOT NULL,
+   nom VARCHAR(255),
+   prenom VARCHAR(255),
+   scope VARCHAR(255) NOT NULL CHECK (scope IN ('admin', 'user')),
+   id_promo INT,
+   id_instance INT,
+   id_score INT,
+   PRIMARY KEY (id),
+   FOREIGN KEY (id_promo) REFERENCES PROMO(id),
+   FOREIGN KEY (id_instance) REFERENCES INSTANCE(id),
+   FOREIGN KEY (id_score) REFERENCES SCORE(id)
+);
+
+CREATE INDEX idx_promo_id ON SESSION (id_promo);
+CREATE INDEX idx_session_id ON QUESTION (id_session);
+CREATE INDEX idx_reponse_id ON QUESTION (id_reponse);
+CREATE INDEX idx_promo_id ON USER (id_promo);
+CREATE INDEX idx_instance_id ON USER (id_instance);
+CREATE INDEX idx_score_id ON USER (id_score);
+
+ALTER TABLE INSTANCE ADD CONSTRAINT unique_instance UNIQUE (adresse_ip);
+ALTER TABLE PROMO ADD CONSTRAINT unique_nom UNIQUE (nom);
+ALTER TABLE SCORE ADD CONSTRAINT positive_points CHECK (points >= 0);
+ALTER TABLE SESSION ADD CONSTRAINT fk_session_promo FOREIGN KEY (id_promo) REFERENCES PROMO(id);
+ALTER TABLE QUESTION ADD CONSTRAINT fk_question_session FOREIGN KEY (id_session) REFERENCES SESSION(id);
+ALTER TABLE QUESTION ADD CONSTRAINT fk_question_reponse FOREIGN KEY (id_reponse) REFERENCES REPONSE(id);
+ALTER TABLE USER ADD CONSTRAINT fk_user_promo FOREIGN KEY (id_promo) REFERENCES PROMO(id);
+ALTER TABLE USER ADD CONSTRAINT fk_user_instance FOREIGN KEY (id_instance) REFERENCES INSTANCE(id);
+ALTER TABLE USER ADD CONSTRAINT fk_user_score FOREIGN KEY (id_score) REFERENCES SCORE(id);
+ALTER TABLE USER ADD CONSTRAINT unique_email UNIQUE (email);
 
 drop trigger if exists before_insert_user;
 
 create trigger before_insert_user
 before insert
-on USER for each row set new.email_user = lower(trim(new.email_user));
+on USER for each row set new.email = lower(trim(new.email));

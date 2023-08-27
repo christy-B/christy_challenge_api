@@ -6,9 +6,7 @@ import { IDeleteResponse } from "../types/IDeleteResponse";
 import { IIndexQuery, IIndexResponse, ITableCount } from '../types/IIndexQuery';
 import { IUpdateResponse } from "../types/IUpdateResponse";
 import { DB } from '../utility/DB';
-import { ApiError } from "../utility/Error/ApiError";
-import { ErrorCode } from "../utility/Error/ErrorCode";
-import { JWTAuthHandler } from "../middleware/auth.middleware";
+
 
 /// Pour tous les endpoints /
 /// GET /
@@ -33,7 +31,7 @@ routerIndex.get<{}, IIndexResponse<IUserRO>, {}, IIndexQuery>('/',
       const count = await db.query<ITableCount[] & RowDataPacket[]>("select count(*) as total from USER");
 
       // Récupérer les lignes
-      const data = await db.query<IUserRO[] & RowDataPacket[]>("select id_user, nom_user, prenom_user, email_user, scope, promo_user from USER limit ? offset ?", [limit, offset]);
+      const data = await db.query<IUserRO[] & RowDataPacket[]>("select id, nom, prenom, email, scope, id_promo, id_instance, id_score from USER limit ? offset ?", [limit, offset]);
 
       // Construire la réponse
       const res: IIndexResponse<IUserRO> = {
@@ -54,10 +52,12 @@ routerIndex.get<{}, IIndexResponse<IUserRO>, {}, IIndexQuery>('/',
 
 
 routerIndex.post<{}, ICreateResponse, IUser>('',
-  JWTAuthHandler('admin'),
   async (request, response, next: NextFunction) => {
 
     try {
+
+      
+
       const user = request.body;
 
       // ATTENTION ! Et si les données dans user ne sont pas valables ?
@@ -85,18 +85,18 @@ routerIndex.post<{}, ICreateResponse, IUser>('',
 
 const routerSingle = Router({ mergeParams: true });
 
-routerSingle.get<{ id_user: string }, IUserRO, {}>('',
+routerSingle.get<{ id: string }, IUserRO, {}>('',
   async (request, response, next: NextFunction) => {
 
     try {
-      const userId = request.params.id_user;
+      const userId = request.params.id;
 
       // ATTENTION ! Valider que le userId est valable ?
 
       const db = DB.Connection;
 
       // Récupérer les lignes
-      const data = await db.query<IUserRO[] & RowDataPacket[]>("select id_user, nom_user, prenom_user, email_user, scope, promo_user from USER where id_user = ?", [userId]);
+      const data = await db.query<IUserRO[] & RowDataPacket[]>("select id, nom, prenom, email, scope, id_promo, id_instance, id_score from USER where id = ?", [userId]);
 
       // Construire la réponse
 
@@ -113,17 +113,16 @@ routerSingle.get<{ id_user: string }, IUserRO, {}>('',
   }
 );
 
-routerSingle.put<{ id_user: string }, IUpdateResponse, IUser>('',
-  JWTAuthHandler('admin'),
+routerIndex.put<{ id: string }, IUpdateResponse, IUser>('',
   async (request, response, next: NextFunction) => {
     try {
       // ATTENTION ! Valider que le userId est valable ?
-      const userId = request.params.id_user;
+      const userId = request.params.id;
       const body = request.body;
 
       const db = DB.Connection;
       // Récupérer les lignes
-      const data = await db.query<OkPacket>(`update USER set ? where id_user = ?`, [body, userId]);
+      const data = await db.query<OkPacket>(`update USER set ? where id = ?`, [body, userId]);
 
       // Construire la réponse
       const res = {
@@ -139,16 +138,15 @@ routerSingle.put<{ id_user: string }, IUpdateResponse, IUser>('',
   }
 );
 
-routerSingle.delete<{ id_user: string }, IDeleteResponse, {}>('',
-  JWTAuthHandler('admin'),
+routerIndex.delete<{ id: string }, IDeleteResponse, {}>('',
   async (request, response, next: NextFunction) => {
     try {
       // ATTENTION ! Valider que le userId est valable ?
-      const userId = request.params.id_user;
+      const userId = request.params.id;
       const db = DB.Connection;
 
       // Récupérer les lignes
-      const data = await db.query<OkPacket>(`delete from USER where id_user = ?`, [userId]);
+      const data = await db.query<OkPacket>(`delete from USER where id = ?`, [userId]);
 
       // Construire la réponse
       const res = {
@@ -168,6 +166,12 @@ routerSingle.delete<{ id_user: string }, IDeleteResponse, {}>('',
 /// Rassembler les 2 sous-routes 
 const routerUser = Router({ mergeParams: true });
 routerUser.use(routerIndex);
-routerUser.use('/:id_user', routerSingle);
+routerUser.use('/:id', routerSingle);
 
-export const ROUTES_USER = routerUser;
+export const ROUTES_USER_ADMIN = routerUser;
+
+const routerForUser = Router({ mergeParams: true });
+routerForUser.use(routerSingle);
+routerForUser.use('/:id', routerSingle);
+
+export const ROUTES_USER = routerForUser;
